@@ -826,7 +826,7 @@
                 <div class="terminal-body">
                     <div class="terminal-line">
                         <span class="prompt">$ </span>
-                        <span class="command">python main.py --issue 42</span>
+                        <span class="command">python main.py --repo owner/repo --issue 42</span>
                     </div>
                     <div class="terminal-line">
                         <span class="info">[1/7]</span> <span class="output">Fetching issue #42...</span>
@@ -1082,7 +1082,7 @@
                     <div class="code-block">
                         <span class="prompt">$ </span><span class="command">git clone https://github.com/Arnold-28/protothon.git</span><br>
                         <span class="prompt">$ </span><span class="command">cd protothon</span><br>
-                        <span class="prompt">$ </span><span class="command">python -m venv venv && source venv/bin/activate</span><br>
+                        <span class="prompt">$ </span><span class="command">python -m venv venv &amp;&amp; source venv/bin/activate</span><br>
                         <span class="prompt">$ </span><span class="command">pip install -r requirements.txt</span>
                     </div>
                 </div>
@@ -1108,14 +1108,14 @@
                     <h4>Run the Pipeline</h4>
                     <p>Process an issue or start the webhook server.</p>
                     <div class="code-block">
-                        <span class="output"># Process a specific issue</span><br>
-                        <span class="prompt">$ </span><span class="command">python main.py --issue 42</span><br>
+                        <span class="output"># Process a specific issue in any repo</span><br>
+                        <span class="prompt">$ </span><span class="command">python main.py --repo owner/repo --issue 42</span><br>
                         <br>
                         <span class="output"># Or start the webhook server</span><br>
                         <span class="prompt">$ </span><span class="command">python main.py --server</span><br>
                         <br>
-                        <span class="output"># List open issues</span><br>
-                        <span class="prompt">$ </span><span class="command">python main.py --list-issues</span>
+                        <span class="output"># List open issues in a repo</span><br>
+                        <span class="prompt">$ </span><span class="command">python main.py --repo owner/repo --list-issues</span>
                     </div>
                 </div>
             </div>

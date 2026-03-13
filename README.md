@@ -108,7 +108,7 @@ Edit `.env` and fill in your credentials:
 |----------|----------|-------------|
 | `OPENAI_API_KEY` | Yes | Your OpenAI API key |
 | `GITHUB_TOKEN` | Yes | GitHub Personal Access Token (needs `repo` scope) |
-| `REPO_NAME` | Yes | Target repository in `owner/repo` format |
+| `REPO_NAME` | No* | Default target repository in `owner/repo` format (*can be overridden via `--repo` CLI flag) |
 | `OPENAI_MODEL` | No | Model to use (default: `gpt-4o`) |
 | `WEBHOOK_SECRET` | No | GitHub webhook secret for signature verification |
 | `SERVER_PORT` | No | Webhook server port (default: `8000`) |
@@ -118,11 +118,15 @@ Edit `.env` and fill in your credentials:
 ### Process a Specific Issue
 
 ```bash
+# Specify the repo and issue number directly:
+python main.py --repo owner/repo --issue 42
+
+# Or use the REPO_NAME from .env:
 python main.py --issue 42
 ```
 
 This runs the full pipeline:
-1. Fetches issue #42 from GitHub
+1. Fetches issue #42 from the specified GitHub repository
 2. Interprets the issue using GPT-4o
 3. Clones and indexes the repository codebase
 4. Retrieves relevant code context via RAG
@@ -133,6 +137,9 @@ This runs the full pipeline:
 ### List Open Issues
 
 ```bash
+python main.py --repo owner/repo --list-issues
+
+# Or use the REPO_NAME from .env:
 python main.py --list-issues
 ```
 

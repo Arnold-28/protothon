@@ -1,14 +1,14 @@
 """GitFix_AI - Main orchestrator that runs the full pipeline.
 
 Usage:
-    # Process a specific issue:
-    python main.py --issue 42
+    # Process a specific issue in a repo:
+    python main.py --repo owner/repo --issue 42
 
     # Start the webhook server:
     python main.py --server
 
-    # List open issues:
-    python main.py --list-issues
+    # List open issues in a repo:
+    python main.py --repo owner/repo --list-issues
 """
 
 import argparse
@@ -141,6 +141,11 @@ def main() -> None:
         description="GitFix_AI - AI-powered GitHub issue resolver",
     )
     parser.add_argument(
+        "--repo", "-r",
+        type=str,
+        help="Target GitHub repository in 'owner/repo' format (overrides REPO_NAME in .env)",
+    )
+    parser.add_argument(
         "--issue", "-i",
         type=int,
         help="GitHub issue number to process",
@@ -157,6 +162,10 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+
+    # Override repo from CLI if provided
+    if args.repo:
+        Config.set_repo(args.repo)
 
     # Validate configuration
     errors = Config.validate()

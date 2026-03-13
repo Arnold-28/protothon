@@ -7,7 +7,10 @@ load_dotenv()
 
 
 class Config:
-    """Central configuration loaded from environment variables."""
+    """Central configuration loaded from environment variables.
+
+    REPO_NAME can be overridden at runtime via CLI --repo argument.
+    """
 
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     GITHUB_TOKEN: str = os.getenv("GITHUB_TOKEN", "")
@@ -42,6 +45,15 @@ class Config:
     }
 
     @classmethod
+    def set_repo(cls, repo_name: str) -> None:
+        """Override the repository name at runtime.
+
+        Args:
+            repo_name: Repository in 'owner/repo' format.
+        """
+        cls.REPO_NAME = repo_name
+
+    @classmethod
     def validate(cls) -> list[str]:
         """Validate that required configuration is present. Returns list of errors."""
         errors = []
@@ -50,5 +62,5 @@ class Config:
         if not cls.GITHUB_TOKEN:
             errors.append("GITHUB_TOKEN is not set")
         if not cls.REPO_NAME:
-            errors.append("REPO_NAME is not set")
+            errors.append("REPO_NAME is not set (use --repo or set REPO_NAME in .env)")
         return errors
