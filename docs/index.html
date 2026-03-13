@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitFix AI - Intelligent Issue to PR Pipeline</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #111118;
+            --bg-card: #16161f;
+            --bg-card-hover: #1c1c28;
+            --border-color: #2a2a3a;
+            --border-glow: #6c5ce7;
+            --text-primary: #f0f0f5;
+            --text-secondary: #9090a8;
+            --text-muted: #606078;
+            --accent-purple: #6c5ce7;
+            --accent-blue: #4facfe;
+            --accent-cyan: #00f2fe;
+            --accent-green: #00e676;
+            --accent-orange: #ff9100;
+            --gradient-1: linear-gradient(135deg, #6c5ce7 0%, #4facfe 100%);
+            --gradient-2: linear-gradient(135deg, #00f2fe 0%, #4facfe 50%, #6c5ce7 100%);
+            --gradient-3: linear-gradient(135deg, #6c5ce7 0%, #a855f7 50%, #ec4899 100%);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* Animated background grid */
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(108, 92, 231, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(108, 92, 231, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Floating orbs */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.15;
+            pointer-events: none;
+            z-index: 0;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .orb-1 {
+            width: 600px;
+            height: 600px;
+            background: var(--accent-purple);
+            top: -200px;
+            right: -200px;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 400px;
+            height: 400px;
+            background: var(--accent-blue);
+            bottom: -100px;
+            left: -100px;
+            animation-delay: -7s;
+        }
+
+        .orb-3 {
+            width: 300px;
+            height: 300px;
+            background: var(--accent-cyan);
+            top: 50%;
+            left: 50%;
+            animation-delay: -14s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(30px, -30px) scale(1.05); }
+            50% { transform: translate(-20px, 20px) scale(0.95); }
+            75% { transform: translate(10px, -10px) scale(1.02); }
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 100;
+            padding: 1rem 2rem;
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(108, 92, 231, 0.1);
+        }
+
+        .nav-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 800;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--gradient-1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .logo span {
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-primary);
+        }
+
+        .nav-cta {
+            padding: 0.5rem 1.25rem;
+            background: var(--gradient-1);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(108, 92, 231, 0.4);
+        }
+
+        /* Main content */
+        .content {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 8rem 2rem 4rem;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 1rem;
+            background: rgba(108, 92, 231, 0.1);
+            border: 1px solid rgba(108, 92, 231, 0.3);
+            border-radius: 50px;
+            font-size: 0.85rem;
+            color: var(--accent-purple);
+            margin-bottom: 2rem;
+            font-weight: 500;
+        }
+
+        .badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.5); }
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            letter-spacing: -0.03em;
+        }
+
+        .hero h1 .gradient-text {
+            background: var(--gradient-2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            max-width: 640px;
+            margin-bottom: 2.5rem;
+            line-height: 1.7;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.85rem 2rem;
+            background: var(--gradient-1);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(108, 92, 231, 0.4);
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.85rem 2rem;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent-purple);
+            background: rgba(108, 92, 231, 0.05);
+        }
+
+        /* Terminal Demo */
+        .terminal-demo {
+            margin-top: 4rem;
+            width: 100%;
+            max-width: 750px;
+        }
+
+        .terminal {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .terminal-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.9rem 1.2rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .terminal-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .terminal-dot.red { background: #ff5f57; }
+        .terminal-dot.yellow { background: #ffbd2e; }
+        .terminal-dot.green { background: #28c840; }
+
+        .terminal-title {
+            margin-left: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .terminal-body {
+            padding: 1.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.8;
+        }
+
+        .terminal-line {
+            opacity: 0;
+            animation: typeIn 0.5s ease forwards;
+        }
+
+        .terminal-line:nth-child(1) { animation-delay: 0.3s; }
+        .terminal-line:nth-child(2) { animation-delay: 0.8s; }
+        .terminal-line:nth-child(3) { animation-delay: 1.3s; }
+        .terminal-line:nth-child(4) { animation-delay: 1.8s; }
+        .terminal-line:nth-child(5) { animation-delay: 2.3s; }
+        .terminal-line:nth-child(6) { animation-delay: 2.8s; }
+        .terminal-line:nth-child(7) { animation-delay: 3.3s; }
+        .terminal-line:nth-child(8) { animation-delay: 3.8s; }
+
+        @keyframes typeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .prompt { color: var(--accent-green); }
+        .command { color: var(--text-primary); }
+        .output { color: var(--text-secondary); }
+        .success { color: var(--accent-green); }
+        .info { color: var(--accent-blue); }
+        .warning { color: var(--accent-orange); }
+
+        /* Section styles */
+        section {
+            padding: 6rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--accent-purple);
+            margin-bottom: 0.75rem;
+        }
+
+        .section-title {
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 800;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+
+        .section-desc {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin-bottom: 3rem;
+        }
+
+        /* Pipeline Section */
+        .pipeline {
+            position: relative;
+        }
+
+        .pipeline-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .pipeline-step {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pipeline-step::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-1);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .pipeline-step:hover {
+            border-color: rgba(108, 92, 231, 0.3);
+            background: var(--bg-card-hover);
+            transform: translateY(-4px);
+        }
+
+        .pipeline-step:hover::before {
+            opacity: 1;
+        }
+
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: rgba(108, 92, 231, 0.1);
+            border: 1px solid rgba(108, 92, 231, 0.2);
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--accent-purple);
+            margin-bottom: 1.25rem;
+        }
+
+        .step-icon {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .pipeline-step h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .pipeline-step p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        /* Architecture Section */
+        .arch-visual {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 3rem;
+            overflow-x: auto;
+        }
+
+        .arch-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            min-width: 600px;
+        }
+
+        .arch-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1.25rem 1.5rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            min-width: 140px;
+            transition: all 0.3s;
+        }
+
+        .arch-node:hover {
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 20px rgba(108, 92, 231, 0.15);
+        }
+
+        .arch-node-icon {
+            font-size: 1.5rem;
+        }
+
+        .arch-node-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .arch-node-sub {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .arch-arrow {
+            color: var(--accent-purple);
+            font-size: 1.5rem;
+            opacity: 0.5;
+        }
+
+        /* Tech Stack */
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .tech-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 1.75rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            transition: all 0.3s;
+        }
+
+        .tech-card:hover {
+            border-color: rgba(108, 92, 231, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .tech-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .tech-icon.purple { background: rgba(108, 92, 231, 0.15); }
+        .tech-icon.blue { background: rgba(79, 172, 254, 0.15); }
+        .tech-icon.cyan { background: rgba(0, 242, 254, 0.15); }
+        .tech-icon.green { background: rgba(0, 230, 118, 0.15); }
+        .tech-icon.orange { background: rgba(255, 145, 0, 0.15); }
+        .tech-icon.pink { background: rgba(236, 72, 153, 0.15); }
+
+        .tech-info h4 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 0.3rem;
+        }
+
+        .tech-info p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Features Section */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2.25rem;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .feature-card:hover {
+            border-color: rgba(108, 92, 231, 0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .feature-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.7;
+        }
+
+        /* Code Block in features */
+        .code-block {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-top: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            line-height: 1.6;
+            overflow-x: auto;
+        }
+
+        /* Getting Started */
+        .setup-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .setup-step {
+            display: flex;
+            gap: 1.5rem;
+            align-items: flex-start;
+        }
+
+        .setup-step-num {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: rgba(108, 92, 231, 0.1);
+            border: 1px solid rgba(108, 92, 231, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: var(--accent-purple);
+            flex-shrink: 0;
+        }
+
+        .setup-step-content {
+            flex: 1;
+        }
+
+        .setup-step-content h4 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .setup-step-content p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 0.75rem;
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border-color);
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .footer-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-brand {
+            font-size: 1.25rem;
+            font-weight: 800;
+            margin-bottom: 0.75rem;
+        }
+
+        .footer-brand span {
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        footer p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: var(--accent-purple);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            .pipeline-steps { grid-template-columns: 1fr; }
+            .tech-grid { grid-template-columns: 1fr; }
+            .features-grid { grid-template-columns: 1fr; }
+            .arch-flow { flex-direction: column; min-width: auto; }
+            .arch-arrow { transform: rotate(90deg); }
+            .terminal-demo { max-width: 100%; }
+            .hero { padding-top: 6rem; }
+        }
+
+        /* Scroll animations */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+<!-- Background effects -->
+<div class="bg-grid"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<!-- Navigation -->
+<nav>
+    <div class="nav-inner">
+        <a href="#" class="logo">
+            <div class="logo-icon">&#9889;</div>
+            GitFix<span>AI</span>
+        </a>
+        <ul class="nav-links">
+            <li><a href="#pipeline">Pipeline</a></li>
+            <li><a href="#architecture">Architecture</a></li>
+            <li><a href="#tech-stack">Tech Stack</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#get-started">Get Started</a></li>
+        </ul>
+        <a href="https://github.com/Arnold-28/protothon" class="nav-cta" target="_blank">View on GitHub</a>
+    </div>
+</nav>
+
+<div class="content">
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="badge">AI-Powered Development Agent</div>
+        <h1>
+            Transform Issues into<br>
+            <span class="gradient-text">Pull Requests with AI</span>
+        </h1>
+        <p>
+            GitFix AI is an intelligent development agent that understands your codebase,
+            interprets GitHub issues, generates code patches, and creates pull requests &mdash;
+            all with automated AI code review.
+        </p>
+        <div class="hero-buttons">
+            <a href="#get-started" class="btn-primary">
+                &#9654; Get Started
+            </a>
+            <a href="#pipeline" class="btn-secondary">
+                &#9881; How It Works
+            </a>
+        </div>
+
+        <!-- Terminal demo -->
+        <div class="terminal-demo">
+            <div class="terminal">
+                <div class="terminal-header">
+                    <div class="terminal-dot red"></div>
+                    <div class="terminal-dot yellow"></div>
+                    <div class="terminal-dot green"></div>
+                    <span class="terminal-title">gitfix-ai &mdash; terminal</span>
+                </div>
+                <div class="terminal-body">
+                    <div class="terminal-line">
+                        <span class="prompt">$ </span>
+                        <span class="command">python main.py --issue 42</span>
+                    </div>
+                    <div class="terminal-line">
+                        <span class="info">[1/7]</span> <span class="output">Fetching issue #42...</span>
+                    </div>
+                    <div class="terminal-line">
+                        <span class="info">[2/7]</span> <span class="output">Interpreting issue with GPT-4o...</span>
+                    </div>
+                    <div class="terminal-line">
+                        <span class="info">[3/7]</span> <span class="output">Indexing repository codebase (RAG + FAISS)...</span>
+                    </div>
+                    <div class="terminal-line">
+                        <span class="info">[4/7]</span> <span class="output">Retrieving relevant code context...</span>
+                    </div>
+                    <div class="terminal-line">
+                        <span class="info">[5/7]</span> <span class="output">Generating code patch...</span>
+                    </div>
+                    <div class="terminal-line">
+                        <span class="info">[6/7]</span> <span class="output">AI Code Review: </span><span class="success">APPROVED (9/10)</span>
+                    </div>
+                    <div class="terminal-line">
+                        <span class="success">[7/7] PR #43 created: </span><span class="info">github.com/repo/pull/43</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pipeline Section -->
+    <section id="pipeline" class="pipeline">
+        <div class="fade-in">
+            <div class="section-label">Workflow</div>
+            <h2 class="section-title">Intelligent 7-Step Pipeline</h2>
+            <p class="section-desc">
+                From issue to pull request in minutes. Each step is powered by
+                state-of-the-art AI models and retrieval-augmented generation.
+            </p>
+        </div>
+        <div class="pipeline-steps fade-in">
+            <div class="pipeline-step">
+                <div class="step-number">01</div>
+                <div class="step-icon">&#128270;</div>
+                <h3>Issue Fetching</h3>
+                <p>Automatically fetches issue details from GitHub including title, description, labels, and author metadata via the PyGithub API.</p>
+            </div>
+            <div class="pipeline-step">
+                <div class="step-number">02</div>
+                <div class="step-icon">&#129504;</div>
+                <h3>Issue Interpretation</h3>
+                <p>GPT-4o analyzes the issue to extract a structured summary, classify the type (bug, feature, refactor), and identify affected areas.</p>
+            </div>
+            <div class="pipeline-step">
+                <div class="step-number">03</div>
+                <div class="step-icon">&#128202;</div>
+                <h3>Codebase Indexing</h3>
+                <p>Clones the repository, splits source files into chunks, generates vector embeddings, and stores them in a FAISS index.</p>
+            </div>
+            <div class="pipeline-step">
+                <div class="step-number">04</div>
+                <div class="step-icon">&#127919;</div>
+                <h3>Context Retrieval</h3>
+                <p>Uses RAG-powered semantic search to find the most relevant code snippets from the indexed codebase for the specific issue.</p>
+            </div>
+            <div class="pipeline-step">
+                <div class="step-number">05</div>
+                <div class="step-icon">&#128736;</div>
+                <h3>Patch Generation</h3>
+                <p>With issue context and relevant code, GPT-4o generates a clean unified diff patch following the repository's existing code style.</p>
+            </div>
+            <div class="pipeline-step">
+                <div class="step-number">06</div>
+                <div class="step-icon">&#9989;</div>
+                <h3>AI Code Review</h3>
+                <p>An AI reviewer evaluates the patch for correctness, security, performance, and edge cases, providing a quality score and verdict.</p>
+            </div>
+            <div class="pipeline-step">
+                <div class="step-number">07</div>
+                <div class="step-icon">&#128640;</div>
+                <h3>PR Creation</h3>
+                <p>Creates a new branch, commits the patch, and opens a pull request referencing the original issue with the full AI review.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture Section -->
+    <section id="architecture">
+        <div class="fade-in">
+            <div class="section-label">Architecture</div>
+            <h2 class="section-title">System Architecture</h2>
+            <p class="section-desc">
+                A modular, agent-based architecture combining AI reasoning with software engineering automation.
+            </p>
+        </div>
+        <div class="arch-visual fade-in">
+            <div class="arch-flow">
+                <div class="arch-node">
+                    <div class="arch-node-icon">&#128230;</div>
+                    <div class="arch-node-label">GitHub Repo</div>
+                    <div class="arch-node-sub">Source Code</div>
+                </div>
+                <div class="arch-arrow">&#10132;</div>
+                <div class="arch-node">
+                    <div class="arch-node-icon">&#128196;</div>
+                    <div class="arch-node-label">Issue Fetcher</div>
+                    <div class="arch-node-sub">GitHub API</div>
+                </div>
+                <div class="arch-arrow">&#10132;</div>
+                <div class="arch-node">
+                    <div class="arch-node-icon">&#129504;</div>
+                    <div class="arch-node-label">Interpreter</div>
+                    <div class="arch-node-sub">LLM Analysis</div>
+                </div>
+                <div class="arch-arrow">&#10132;</div>
+                <div class="arch-node">
+                    <div class="arch-node-icon">&#128202;</div>
+                    <div class="arch-node-label">Indexer</div>
+                    <div class="arch-node-sub">Embeddings</div>
+                </div>
+                <div class="arch-arrow">&#10132;</div>
+                <div class="arch-node">
+                    <div class="arch-node-icon">&#127919;</div>
+                    <div class="arch-node-label">Retriever</div>
+                    <div class="arch-node-sub">RAG Search</div>
+                </div>
+                <div class="arch-arrow">&#10132;</div>
+                <div class="arch-node">
+                    <div class="arch-node-icon">&#128736;</div>
+                    <div class="arch-node-label">Patch Gen</div>
+                    <div class="arch-node-sub">LLM Code Fix</div>
+                </div>
+                <div class="arch-arrow">&#10132;</div>
+                <div class="arch-node">
+                    <div class="arch-node-icon">&#9989;</div>
+                    <div class="arch-node-label">Reviewer</div>
+                    <div class="arch-node-sub">AI Review</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tech Stack Section -->
+    <section id="tech-stack">
+        <div class="fade-in">
+            <div class="section-label">Technology</div>
+            <h2 class="section-title">Tech Stack</h2>
+            <p class="section-desc">
+                Built with cutting-edge AI and automation tools for maximum reliability and performance.
+            </p>
+        </div>
+        <div class="tech-grid fade-in">
+            <div class="tech-card">
+                <div class="tech-icon purple">&#129302;</div>
+                <div class="tech-info">
+                    <h4>OpenAI GPT-4o</h4>
+                    <p>Issue interpretation, patch generation, and automated code review</p>
+                </div>
+            </div>
+            <div class="tech-card">
+                <div class="tech-icon blue">&#128279;</div>
+                <div class="tech-info">
+                    <h4>LangChain</h4>
+                    <p>RAG orchestration, text splitting, and embedding pipelines</p>
+                </div>
+            </div>
+            <div class="tech-card">
+                <div class="tech-icon cyan">&#128269;</div>
+                <div class="tech-info">
+                    <h4>FAISS</h4>
+                    <p>Facebook AI Similarity Search for fast vector-based code retrieval</p>
+                </div>
+            </div>
+            <div class="tech-card">
+                <div class="tech-icon green">&#128025;</div>
+                <div class="tech-info">
+                    <h4>Python 3.10+</h4>
+                    <p>Strong AI ecosystem with rich libraries for automation</p>
+                </div>
+            </div>
+            <div class="tech-card">
+                <div class="tech-icon orange">&#128421;</div>
+                <div class="tech-info">
+                    <h4>FastAPI + Uvicorn</h4>
+                    <p>High-performance webhook server for GitHub event automation</p>
+                </div>
+            </div>
+            <div class="tech-card">
+                <div class="tech-icon pink">&#128025;</div>
+                <div class="tech-info">
+                    <h4>PyGithub + GitPython</h4>
+                    <p>Full GitHub API integration for issues, PRs, and repository management</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features">
+        <div class="fade-in">
+            <div class="section-label">Capabilities</div>
+            <h2 class="section-title">Key Features</h2>
+            <p class="section-desc">
+                Everything you need to automate your issue-to-PR workflow with AI.
+            </p>
+        </div>
+        <div class="features-grid fade-in">
+            <div class="feature-card">
+                <div class="feature-icon" style="background: rgba(108, 92, 231, 0.15);">&#128161;</div>
+                <h3>Intelligent Issue Understanding</h3>
+                <p>Goes beyond keyword matching. The LLM deeply understands issue intent, classifies types, identifies affected areas, and generates targeted search queries for the codebase.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon" style="background: rgba(79, 172, 254, 0.15);">&#128451;</div>
+                <h3>RAG-Powered Code Search</h3>
+                <p>Embeds your entire codebase into a FAISS vector store for semantic search. Finds the most relevant code snippets even across large repositories with thousands of files.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon" style="background: rgba(0, 242, 254, 0.15);">&#128295;</div>
+                <h3>Context-Aware Patches</h3>
+                <p>Generates minimal, focused unified diff patches that follow your repository's existing code style and conventions. No unnecessary changes or refactoring.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon" style="background: rgba(0, 230, 118, 0.15);">&#128737;</div>
+                <h3>Automated Code Review</h3>
+                <p>Every patch is reviewed by an AI agent checking for correctness, security vulnerabilities, performance issues, and edge cases before the PR is created.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon" style="background: rgba(255, 145, 0, 0.15);">&#9889;</div>
+                <h3>Webhook Automation</h3>
+                <p>Set up the FastAPI webhook server and the entire pipeline triggers automatically whenever a new issue is opened in your repository. Zero manual intervention.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon" style="background: rgba(236, 72, 153, 0.15);">&#128187;</div>
+                <h3>CLI Interface</h3>
+                <p>Full command-line interface to process specific issues, list open issues, or start the webhook server. Integrates seamlessly into any development workflow.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Get Started Section -->
+    <section id="get-started">
+        <div class="fade-in">
+            <div class="section-label">Quick Start</div>
+            <h2 class="section-title">Get Started in Minutes</h2>
+            <p class="section-desc">
+                Set up GitFix AI and start resolving issues automatically.
+            </p>
+        </div>
+        <div class="setup-steps fade-in">
+            <div class="setup-step">
+                <div class="setup-step-num">1</div>
+                <div class="setup-step-content">
+                    <h4>Clone &amp; Install</h4>
+                    <p>Clone the repository and install Python dependencies.</p>
+                    <div class="code-block">
+                        <span class="prompt">$ </span><span class="command">git clone https://github.com/Arnold-28/protothon.git</span><br>
+                        <span class="prompt">$ </span><span class="command">cd protothon</span><br>
+                        <span class="prompt">$ </span><span class="command">python -m venv venv && source venv/bin/activate</span><br>
+                        <span class="prompt">$ </span><span class="command">pip install -r requirements.txt</span>
+                    </div>
+                </div>
+            </div>
+            <div class="setup-step">
+                <div class="setup-step-num">2</div>
+                <div class="setup-step-content">
+                    <h4>Configure Environment</h4>
+                    <p>Set up your API keys and repository target.</p>
+                    <div class="code-block">
+                        <span class="prompt">$ </span><span class="command">cp .env.example .env</span><br>
+                        <br>
+                        <span class="output"># Edit .env with your keys:</span><br>
+                        <span class="warning">OPENAI_API_KEY</span>=<span class="output">sk-your-key-here</span><br>
+                        <span class="warning">GITHUB_TOKEN</span>=<span class="output">ghp_your-token-here</span><br>
+                        <span class="warning">REPO_NAME</span>=<span class="output">owner/repository</span>
+                    </div>
+                </div>
+            </div>
+            <div class="setup-step">
+                <div class="setup-step-num">3</div>
+                <div class="setup-step-content">
+                    <h4>Run the Pipeline</h4>
+                    <p>Process an issue or start the webhook server.</p>
+                    <div class="code-block">
+                        <span class="output"># Process a specific issue</span><br>
+                        <span class="prompt">$ </span><span class="command">python main.py --issue 42</span><br>
+                        <br>
+                        <span class="output"># Or start the webhook server</span><br>
+                        <span class="prompt">$ </span><span class="command">python main.py --server</span><br>
+                        <br>
+                        <span class="output"># List open issues</span><br>
+                        <span class="prompt">$ </span><span class="command">python main.py --list-issues</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<!-- Footer -->
+<footer>
+    <div class="footer-inner">
+        <div class="footer-brand">
+            GitFix<span>AI</span>
+        </div>
+        <p>AI-powered development agent that transforms issues into pull requests.</p>
+        <div class="footer-links">
+            <a href="https://github.com/Arnold-28/protothon" target="_blank">GitHub</a>
+            <a href="#pipeline">Documentation</a>
+            <a href="#get-started">Quick Start</a>
+        </div>
+        <p style="margin-top: 1.5rem; font-size: 0.75rem;">&copy; 2025 GitFix AI. Built with AI reasoning + software engineering automation.</p>
+    </div>
+</footer>
+
+<!-- Scroll animation script -->
+<script>
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+            }
+        });
+    }, {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    });
+
+    document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+    // Smooth scroll for nav links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    });
+</script>
+
+</body>
+</html>
